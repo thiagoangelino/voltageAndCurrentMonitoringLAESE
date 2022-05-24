@@ -7,12 +7,17 @@
 #include <HTTPClient.h>
 #include <WebServer.h>
 #include <AutoConnect.h>
-#include <ESP32_Servo.h>
+#include <ESP32Servo.h>
 #include "time.h"
+#include <Arduino_JSON.h>
+
+
 
 WebServer Server;
 AutoConnect Portal(Server);
 Servo myservo; // atach the servo
+
+
 
 //NTP config
 const char* ntpServer = "pool.ntp.org";
@@ -22,6 +27,14 @@ const int   daylightOffset_sec = -3600*3;
 //Constants to connect with ThingSpeak
 const char* host = "api.thingspeak.com";
 String api_key = "C6BWS2TW4S746CCX"; // Your API Key provied by thingspeak
+
+
+//Constants to connect with Python Local Server
+const char* ssid = "LAESE";
+const char* password = "laesewifi";
+String pyt_server_name = "http://10.50.22.46:5000/modulos";
+#define DELAY = 7000
+unsigned long last_update = 0;
 
 // Variables to meansurement
 const int voltagePin = 35;
@@ -53,6 +66,7 @@ void rootPage() {
 //Your Domain name with URL path or IP address with path
 String serverName = "http://sanusb.org/ftpmonitor";
 
+
 // the following variables are unsigned longs because the time, measured in
 // milliseconds, will quickly become a bigger number than can be stored in an int.
 unsigned long lastTime = 0;
@@ -61,6 +75,7 @@ unsigned long lastTime = 0;
 // Set timer to 5 seconds (5000)
 unsigned long timerDelay = 600000;
 
+ 
 void setup() {
   
   delay(1000);
@@ -70,6 +85,18 @@ void setup() {
   myservo.write(0);
 
   Server.on("/", rootPage);
+  
+
+  WiFi.begin(ssid, password);
+  Serial.println("Connecting");
+  while(WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.print("Connected to WiFi network with IP Address: ");
+  Serial.println(WiFi.localIP());
+  
   
   if (Portal.begin()) {
     Serial.println("WiFi connected: " + WiFi.localIP().toString());
@@ -151,6 +178,7 @@ void measurement(){
 
       SendToThingSpeak();
       SendToMonitorWeb(String(voltageValue_conv), String(currentValue_conv), getDateTime());
+      SendToPython(String(voltageValue_conv), String(currentValue_conv), getDateTime());
       Serial.println("Tensão: " + String(voltageValue_conv) + " V");
       Serial.println("Corente: " + String(currentValue_conv) + " A");
       Serial.println("Potência: " + String(potFV) + " W");
@@ -226,6 +254,40 @@ void SendToMonitorWeb(String current, String voltage, String dateTime){
   }
   // Free resources
   http.end();
+}
+
+void SendToPython(String current, String voltage, String dateTime){
+  
+  String dados = "{";
+
+  dados = dados+"\"corrente\": \""+current+"\",";
+  dados = dados+"\"tensao\": \""+voltage+"\",";
+  dados = dados+"\"data_hora\": \""+dateTime+"\"";
+  dados = dados+"}";
+  Serial.println(dados);
+  
+  HTTPClient http;
+  http.begin(pyt_server_name.c_str());
+  http.addHeader("Content-Type", "application/json");
+
+  int httpResponse = http.POST(dados);
+ 
+  if(httpResponse>0){
+    
+    Serial.print("Resposta HTTP: ");
+    Serial.println(httpResponse);
+    Serial.println(http.getString());
+    
+    }
+    else {
+     
+    Serial.print("Erro: ");
+    Serial.println(httpResponse);
+       
+    }
+    http.end();
+     
+  
 }
 
 String getDateTime(){
