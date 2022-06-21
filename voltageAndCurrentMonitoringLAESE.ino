@@ -30,9 +30,9 @@ String api_key = "C6BWS2TW4S746CCX"; // Your API Key provied by thingspeak
 
 
 //Constants to connect with Python Local Server
-const char* ssid = "LAESE";
-const char* password = "laesewifi";
-String pyt_server_name = "http://10.50.22.46:5000/modulos";
+const char* ssid = "GCNET MARIA";
+const char* password = "cp1143rmlg5";
+String pyt_server_name = "http://192.168.0.120:5000/modulos";
 #define DELAY = 7000
 unsigned long last_update = 0;
 
@@ -178,7 +178,7 @@ void measurement(){
 
       SendToThingSpeak();
       SendToMonitorWeb(String(voltageValue_conv), String(currentValue_conv), getDateTime());
-      SendToPython(String(voltageValue_conv), String(currentValue_conv), getDateTime());
+      SendToPython(String(currentValue_conv), String(voltageValue_conv), getDateTime());
       Serial.println("Tensão: " + String(voltageValue_conv) + " V");
       Serial.println("Corente: " + String(currentValue_conv) + " A");
       Serial.println("Potência: " + String(potFV) + " W");
@@ -305,7 +305,7 @@ String getDateTime(){
   if(int(timeinfo.tm_min) < 10){ minute = "0" + String(timeinfo.tm_min); } else {minute = String(timeinfo.tm_min); } 
   if(int(timeinfo.tm_sec) < 10){ sec = "0" + String(timeinfo.tm_sec); } else { sec = String(timeinfo.tm_sec); }
 
-  String dateTime = String(timeinfo.tm_year + 1900) + "-" + mon + "-" + day + "-" + 
+  String dateTime = String(timeinfo.tm_year + 1900) + "-" + mon + "-" + day + " - " + 
                     hour + ":" + minute + ":" + sec;
 
   return dateTime;
